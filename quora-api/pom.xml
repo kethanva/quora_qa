@@ -10,11 +10,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quora-api</artifactId>
-    
+
     <properties>
         <postgresql.driver.version>42.2.2</postgresql.driver.version>
         <postgresql.driver.name>org.postgresql.Driver</postgresql.driver.name>
     </properties>
+
 
     <dependencies>
         <dependency>
@@ -89,6 +90,7 @@
 
         <plugins>
             <plugin>
+
                 <groupId>io.swagger</groupId>
                 <artifactId>swagger-codegen-maven-plugin</artifactId>
                 <dependencies>
@@ -159,6 +161,13 @@
 
 
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.upgrad.quora.api.QuoraApiApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
