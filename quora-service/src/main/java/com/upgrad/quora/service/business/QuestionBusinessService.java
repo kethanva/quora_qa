@@ -28,6 +28,19 @@ public class QuestionBusinessService {
 
     @Autowired
     private UserAuthTokenDao userAuthTokenDao;
+    @Transactional(propagation = Propagation.REQUIRED)
+    public QuestionEntity create(QuestionEntity questionEntity, String authorizationToken) throws AuthorizationFailedException {
+        UserAuthTokenEntity userAuthTokenEntity = userAuthTokenDao.getUserAuthByToken(authorizationToken);
+        if (userAuthTokenEntity == null)
+            throw new AuthorizationFailedException(GenericErrorCode.ATHR_001.getCode(), GenericErrorCode.ATHR_001.getDefaultMessage());
+        if (null != userAuthTokenEntity.getLogoutAt() && userAuthTokenEntity.getLogoutAt().compareTo(ZonedDateTime.now()) < 0)
+            throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to post a question");
+        questionEntity.setDate(ZonedDateTime.now());
+        questionEntity.setUuid(UUID.randomUUID().toString());
+        questionEntity.setUserEntity(userAuthTokenEntity.getUserEntity());
+        questionDAO.create(questionEntity);
+        return questionEntity;
+    }
 
     public List<QuestionEntity> getAllQuestions(String authorizationToken) throws AuthorizationFailedException {
         UserAuthTokenEntity userAuthTokenEntity = userAuthTokenDao.getUserAuthByToken(authorizationToken);
@@ -37,6 +50,25 @@ public class QuestionBusinessService {
             throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to get all questions");
         return questionDAO.getAllQuestions();
 
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public QuestionEntity editQuestionContent(QuestionEntity questionEntity, String authorizationToken) throws AuthorizationFailedException, InvalidQuestionException {
+        UserAuthTokenEntity userAuthTokenEntity = userAuthTokenDao.getUserAuthByToken(authorizationToken);
+        if (userAuthTokenEntity == null)
+            throw new AuthorizationFailedException(GenericErrorCode.ATHR_001.getCode(), GenericErrorCode.ATHR_001.getDefaultMessage());
+        if (null != userAuthTokenEntity.getLogoutAt() && userAuthTokenEntity.getLogoutAt().compareTo(ZonedDateTime.now()) < 0)
+            throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to edit the question");
+
+        QuestionEntity questionById = questionDAO.getQuestionById(questionEntity.getUuid());
+
+        if (null == questionById)
+            throw new InvalidQuestionException(GenericErrorCode.QUES_001.getCode(), GenericErrorCode.QUES_001.getDefaultMessage());
+        if (!questionById.getUserEntity().getUuid().equals(userAuthTokenEntity.getUser().getUuid()))
+            throw new AuthorizationFailedException(GenericErrorCode.ATHR_003.getCode(), "Only the question owner can edit the question");
+        questionById.setContent(questionEntity.getContent());
+        questionDAO.editQuestionContent(questionById);
+        return questionById;
     }
 
 

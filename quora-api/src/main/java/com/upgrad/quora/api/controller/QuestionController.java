@@ -21,6 +21,14 @@ public class QuestionController {
     @Autowired
     private QuestionBusinessService questionBusinessService;
 
+    @RequestMapping(method = RequestMethod.POST, path = "/create", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<QuestionResponse> create(final QuestionRequest questionRequest, @RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
+        QuestionEntity questionEntity = new QuestionEntity();
+        questionEntity.setContent(questionRequest.getContent());
+        QuestionEntity createdQuestionEntity = questionBusinessService.create(questionEntity, authorization);
+        QuestionResponse questionResponse = new QuestionResponse().id(createdQuestionEntity.getUuid()).status("QUESTION CREATED");
+        return new ResponseEntity<>(questionResponse, HttpStatus.CREATED);
+    }
 
     @GetMapping(path = "/all")
     public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestions(@RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
@@ -35,6 +43,29 @@ public class QuestionController {
         return new ResponseEntity<>(questionResponseList, HttpStatus.OK);
     }
 
+    @PutMapping(path = "edit/{questionId}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity<QuestionEditResponse> editQuestionContent(@PathVariable("questionId") String questionId, final QuestionEditRequest questionEditRequest, @RequestHeader("authorization") final String authorization) throws AuthorizationFailedException, InvalidQuestionException {
+        QuestionEntity questionEntity = new QuestionEntity();
+        questionEntity.setUuid(questionId);
+        questionEntity.setContent(questionEditRequest.getContent());
+        QuestionEntity questionContent = questionBusinessService.editQuestionContent(questionEntity, authorization);
+
+        return new ResponseEntity<>(new QuestionEditResponse().id(questionContent.getUuid()).status("QUESTION EDITED"), HttpStatus.OK);
+    }
+
+
+    @RequestMapping(method = RequestMethod.DELETE, path = "/delete/{questionId}")
+    public ResponseEntity<QuestionDeleteResponse> deleteQuestion(
+            @RequestHeader("authorization") final String accessToken,
+            @PathVariable("questionId") final String questionId)
+            throws AuthorizationFailedException, InvalidQuestionException {
+
+        QuestionEntity questionEntity = questionBusinessService.deleteQuestion(accessToken, questionId);
+        QuestionDeleteResponse questionDeleteResponse = new QuestionDeleteResponse();
+        questionDeleteResponse.setId(questionEntity.getUuid());
+        questionDeleteResponse.setStatus("QUESTION DELETED");
+        return new ResponseEntity<QuestionDeleteResponse>(questionDeleteResponse, HttpStatus.OK);
+    }
 
     @RequestMapping(
             method = RequestMethod.GET,
