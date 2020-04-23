@@ -10,12 +10,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Common controller with /userprofile mapping
+ */
 @RestController
 @RequestMapping("/userprofile")
 public class CommonController {
+
     @Autowired
     UserBusinessService userBusinessService;
 
+    /**
+     * Gets user by id
+     *
+     * @param userId        user id
+     * @param authorization authorization
+     * @return the user by id
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws UserNotFoundException        user not found exception
+     */
     @GetMapping(path = "/{userId}")
     public ResponseEntity<UserDetailsResponse> getUserById(@PathVariable("userId") String userId, @RequestHeader("authorization") final String authorization) throws AuthorizationFailedException, UserNotFoundException {
         UserEntity userEntity = userBusinessService.getUserById(userId, authorization);

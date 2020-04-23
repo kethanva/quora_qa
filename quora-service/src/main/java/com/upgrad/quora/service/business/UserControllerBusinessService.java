@@ -36,9 +36,7 @@ public class UserControllerBusinessService {
             throw new SignUpRestrictedException("SGR-002", "This user has already been registered, try with any other emailId");
         }
 
-        // For Creating Random unique ID
         userEntity.setUuid(UUID.randomUUID().toString());
-        //Password Encryption
         String[] encryptedText = cryptographyProvider.encrypt(userEntity.getPassword());
         userEntity.setSalt(encryptedText[0]);
         userEntity.setPassword(encryptedText[1]);

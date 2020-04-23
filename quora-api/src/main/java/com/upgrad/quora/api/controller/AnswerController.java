@@ -19,34 +19,57 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+/**
+ * Answer controller
+ */
 @RestController
 public class AnswerController {
+
     @Autowired
     AnswerBusinessService answerBusinessService;
 
+    /**
+     * Gets all answers to question
+     *
+     * @param userId        user id
+     * @param authorization authorization
+     * @return the all answers to question
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws InvalidQuestionException     invalid question exception
+     */
     @GetMapping(path = "/answer/all/{questionId}")
     public ResponseEntity<List<AnswerDetailsResponse>> getAllAnswersToQuestion(@PathVariable("questionId") String userId,
-                                                          @RequestHeader("authorization") final String authorization)
+                                                                               @RequestHeader("authorization") final String authorization)
             throws AuthorizationFailedException, InvalidQuestionException {
 
         List<AnswerEntity> answersList = answerBusinessService.getAllAnswersToQuestionById(userId, authorization);
 
-        List<AnswerDetailsResponse> answersResponseList = answersList.parallelStream().map(ans ->{
-                AnswerDetailsResponse ansRes = new AnswerDetailsResponse();
-                ansRes.setId(ans.getUuid());
-                ansRes.setAnswerContent(ans.getAnswer());
-                ansRes.setQuestionContent(ans.getQuestionEntity().getContent());
-                return ansRes;
+        List<AnswerDetailsResponse> answersResponseList = answersList.parallelStream().map(ans -> {
+            AnswerDetailsResponse ansRes = new AnswerDetailsResponse();
+            ansRes.setId(ans.getUuid());
+            ansRes.setAnswerContent(ans.getAnswer());
+            ansRes.setQuestionContent(ans.getQuestionEntity().getContent());
+            return ansRes;
         }).collect(Collectors.toList());
 
         return new ResponseEntity<>(answersResponseList, HttpStatus.OK);
     }
 
+    /**
+     * Create answer for question
+     *
+     * @param questionId    question id
+     * @param answerRequest answer request
+     * @param authorization authorization
+     * @return the response entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws InvalidQuestionException     invalid question exception
+     */
     @RequestMapping(method = RequestMethod.POST, path = "/question/{questionId}/answer/create",
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<AnswerResponse> createAnswerForQuestion(@PathVariable("questionId") String questionId,
-                                            AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
-                                                throws AuthorizationFailedException, InvalidQuestionException {
+                                                                  AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
+            throws AuthorizationFailedException, InvalidQuestionException {
 
         AnswerEntity answerEntity = answerBusinessService.createAnswerForQuestion(questionId, answerRequest.getAnswer(), authorization);
 
@@ -54,11 +77,21 @@ public class AnswerController {
         return new ResponseEntity<>(answerResponse, HttpStatus.OK);
     }
 
+    /**
+     * Update answer
+     *
+     * @param answerId      answer id
+     * @param answerRequest answer request
+     * @param authorization authorization
+     * @return the response entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws AnswerNotFoundException      answer not found exception
+     */
     @RequestMapping(method = RequestMethod.PUT, path = "/answer/edit/{answerId}",
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<AnswerResponse> updateAnswer(@PathVariable("answerId") String answerId,
-                                               AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
-                                                    throws AuthorizationFailedException, AnswerNotFoundException {
+                                                       AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
+            throws AuthorizationFailedException, AnswerNotFoundException {
 
         AnswerEntity answerEntity = answerBusinessService.updateAnswer(answerId, answerRequest.getAnswer(), authorization);
 
@@ -66,9 +99,18 @@ public class AnswerController {
         return new ResponseEntity<>(answerResponse, HttpStatus.OK);
     }
 
+    /**
+     * Delete answer
+     *
+     * @param answerId      answer id
+     * @param authorization authorization
+     * @return the response entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws AnswerNotFoundException      answer not found exception
+     */
     @RequestMapping(method = RequestMethod.DELETE, path = "/answer/delete/{answerId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<AnswerResponse> deleteAnswer(@PathVariable("answerId") String answerId,
-                                                        @RequestHeader("authorization") final String authorization)
+                                                       @RequestHeader("authorization") final String authorization)
             throws AuthorizationFailedException, AnswerNotFoundException {
 
         AnswerEntity answerEntity = answerBusinessService.deleteAnswer(answerId, authorization);
