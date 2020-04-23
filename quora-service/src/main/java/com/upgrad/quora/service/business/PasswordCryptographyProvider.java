@@ -13,6 +13,9 @@ import javax.crypto.spec.PBEKeySpec;
 import org.springframework.stereotype.Component;
 
 
+/**
+ * Password cryptography provider
+ */
 @Component
 public class PasswordCryptographyProvider {
 

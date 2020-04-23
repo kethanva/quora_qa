@@ -5,6 +5,9 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.text.MessageFormat;
 
+/**
+ * Unexpected exception
+ */
 public class UnexpectedException extends RuntimeException {
 
     private static final long serialVersionUID = 2737472949025937415L;
@@ -15,12 +18,25 @@ public class UnexpectedException extends RuntimeException {
 
     private final Object[] parameters;
 
+    /**
+     * Unexpected exception
+     *
+     * @param errorCode  error code
+     * @param parameters parameters
+     */
     public UnexpectedException(final ErrorCode errorCode, final Object... parameters) {
         super();
         this.errorCode = errorCode;
         this.parameters = parameters;
     }
 
+    /**
+     * Unexpected exception
+     *
+     * @param errorCode  error code
+     * @param cause      cause
+     * @param parameters parameters
+     */
     public UnexpectedException(final ErrorCode errorCode, final Throwable cause, final Object... parameters) {
         super();
         this.errorCode = errorCode;
@@ -28,6 +44,11 @@ public class UnexpectedException extends RuntimeException {
         this.parameters = parameters;
     }
 
+    /**
+     * Gets error code *
+     *
+     * @return the error code
+     */
     public ErrorCode getErrorCode() {
         return errorCode;
     }

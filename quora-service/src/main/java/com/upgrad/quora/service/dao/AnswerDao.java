@@ -8,11 +8,21 @@ import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import java.util.List;
 
+/**
+ * Answer dao
+ */
 @Repository
 public class AnswerDao {
+
     @PersistenceContext
     private EntityManager entityManager;
 
+    /**
+     * Gets all answers for question
+     *
+     * @param questionId question id
+     * @return the all answers for question
+     */
     public List<AnswerEntity> getAllAnswersForQuestion(final String questionId) {
         try {
             return entityManager
@@ -24,6 +34,12 @@ public class AnswerDao {
         }
     }
 
+    /**
+     * Create answer entity
+     *
+     * @param answerEntity answer entity
+     * @return the answer entity
+     */
     public AnswerEntity createAnswer(final AnswerEntity answerEntity) {
         try {
             entityManager.persist(answerEntity);
@@ -35,6 +51,12 @@ public class AnswerDao {
 
     }
 
+    /**
+     * Gets answer by uuid
+     *
+     * @param answerId answer id
+     * @return the answer by uuid
+     */
     public AnswerEntity getAnswerByUUID(final String answerId) {
         try {
             return entityManager
@@ -47,6 +69,12 @@ public class AnswerDao {
         }
     }
 
+    /**
+     * Save or update answer entity
+     *
+     * @param answerEntity answer entity
+     * @return the answer entity
+     */
     public AnswerEntity saveOrUpdateAnswer(final AnswerEntity answerEntity) {
         try {
             return entityManager.merge(answerEntity);
@@ -56,6 +84,12 @@ public class AnswerDao {
         }
     }
 
+    /**
+     * Delete answer entity
+     *
+     * @param answerEntity answer entity
+     * @return the answer entity
+     */
     public AnswerEntity deleteAnswer(final AnswerEntity answerEntity) {
         try {
             entityManager.remove(answerEntity);

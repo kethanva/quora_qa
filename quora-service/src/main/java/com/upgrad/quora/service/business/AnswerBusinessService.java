@@ -19,6 +19,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Answer business service
+ */
 @Service
 public class AnswerBusinessService {
 
@@ -31,6 +34,15 @@ public class AnswerBusinessService {
     @Autowired
     QuestionDAO questionDAO;
 
+    /**
+     * Gets all answers to question by id
+     *
+     * @param questionId         question id
+     * @param authorizationToken authorization token
+     * @return the all answers to question by id
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws InvalidQuestionException     invalid question exception
+     */
     public List<AnswerEntity> getAllAnswersToQuestionById(String questionId, String authorizationToken) throws AuthorizationFailedException, InvalidQuestionException {
         validateAuthorizationToken(authorizationToken);
         List<AnswerEntity> answers = answerDao.getAllAnswersForQuestion(questionId);
@@ -40,6 +52,16 @@ public class AnswerBusinessService {
     }
 
 
+    /**
+     * Create answer for question entity
+     *
+     * @param questionId         question id
+     * @param answer             answer
+     * @param authorizationToken authorization token
+     * @return the answer entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws InvalidQuestionException     invalid question exception
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public AnswerEntity createAnswerForQuestion(String questionId, String answer, String authorizationToken) throws AuthorizationFailedException, InvalidQuestionException {
 
@@ -60,14 +82,19 @@ public class AnswerBusinessService {
 
     }
 
+    /**
+     * Update answer entity
+     *
+     * @param answerId           answer id
+     * @param answer             answer
+     * @param authorizationToken authorization token
+     * @return the answer entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws AnswerNotFoundException      answer not found exception
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public AnswerEntity updateAnswer(String answerId, String answer, String authorizationToken) throws AuthorizationFailedException, AnswerNotFoundException {
-        UserAuthTokenEntity userAuthTokenEntity = userDao.getUserAuthToken(authorizationToken);
-        if (userAuthTokenEntity == null)
-            throw new AuthorizationFailedException(GenericErrorCode.ATHR_001.getCode(), GenericErrorCode.ATHR_001.getDefaultMessage());
-        if (null != userAuthTokenEntity.getLogoutAt() && userAuthTokenEntity.getLogoutAt().compareTo(ZonedDateTime.now()) < 0)
-            throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to edit an answer");
-
+        UserAuthTokenEntity userAuthTokenEntity = validateAuthorizationToken(authorizationToken);
         AnswerEntity answerEntity = answerDao.getAnswerByUUID(answerId);
         if (answerEntity == null)
             throw new AnswerNotFoundException(GenericErrorCode.ANS_001.getCode(), GenericErrorCode.ANS_001.getDefaultMessage());
@@ -80,6 +107,15 @@ public class AnswerBusinessService {
 
     }
 
+    /**
+     * Delete answer entity
+     *
+     * @param answerId           answer id
+     * @param authorizationToken authorization token
+     * @return the answer entity
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws AnswerNotFoundException      answer not found exception
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public AnswerEntity deleteAnswer(String answerId, String authorizationToken) throws AuthorizationFailedException, AnswerNotFoundException {
 
@@ -95,6 +131,13 @@ public class AnswerBusinessService {
 
     }
 
+    /**
+     * Validate Authorization Token
+     *
+     * @param authorizationToken authorization token
+     * @return the answer entity
+     * @throws AuthorizationFailedException authorization failed exception
+     */
     private UserAuthTokenEntity validateAuthorizationToken(String authorizationToken) throws AuthorizationFailedException {
         UserAuthTokenEntity userAuthTokenEntity = userDao.getUserAuthToken(authorizationToken);
         if (userAuthTokenEntity == null)

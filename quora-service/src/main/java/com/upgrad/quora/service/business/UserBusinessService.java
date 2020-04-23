@@ -13,12 +13,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 
+/**
+ * User business service
+ */
 @Service
 public class UserBusinessService {
 
+    /**
+     * User dao
+     */
     @Autowired
     UserDao userDao;
 
+    /**
+     * Gets user by id
+     *
+     * @param userId             user id
+     * @param authorizationToken authorization token
+     * @return the user by id
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws UserNotFoundException        user not found exception
+     */
     public UserEntity getUserById(String userId, String authorizationToken) throws AuthorizationFailedException, UserNotFoundException {
         tokenValidation(authorizationToken);
         UserEntity user = userDao.getUserByUserId(userId);
@@ -27,6 +42,15 @@ public class UserBusinessService {
         else return user;
     }
 
+    /**
+     * Delete user by id string
+     *
+     * @param userId             user id
+     * @param authorizationToken authorization token
+     * @return the string
+     * @throws AuthorizationFailedException authorization failed exception
+     * @throws UserNotFoundException        user not found exception
+     */
     @Transactional(propagation = Propagation.REQUIRED)
     public String deleteUserById(String userId, String authorizationToken) throws AuthorizationFailedException, UserNotFoundException {
         UserAuthTokenEntity userAuthTokenEntity = tokenValidation(authorizationToken);
@@ -39,6 +63,14 @@ public class UserBusinessService {
         else return userIdResponse;
     }
 
+
+    /**
+     * Validate Authorization Token
+     *
+     * @param authorizationToken authorization token
+     * @return the answer entity
+     * @throws AuthorizationFailedException authorization failed exception
+     */
     private UserAuthTokenEntity tokenValidation(String authorizationToken) throws AuthorizationFailedException {
         UserAuthTokenEntity userAuthTokenEntity = userDao.getUserAuthToken(authorizationToken);
         if (userAuthTokenEntity == null)
