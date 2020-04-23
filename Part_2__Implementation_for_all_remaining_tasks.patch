@@ -1,0 +1,439 @@
+Index: quora-service/src/main/java/com/upgrad/quora/service/business/AnswerBusinessService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- quora-service/src/main/java/com/upgrad/quora/service/business/AnswerBusinessService.java	(revision Shelved Version)
++++ quora-service/src/main/java/com/upgrad/quora/service/business/AnswerBusinessService.java	(revision Shelved Version)
+@@ -0,0 +1,107 @@
++package com.upgrad.quora.service.business;
++
++import com.upgrad.quora.service.common.GenericErrorCode;
++import com.upgrad.quora.service.dao.AnswerDao;
++import com.upgrad.quora.service.dao.QuestionDAO;
++import com.upgrad.quora.service.dao.UserDao;
++import com.upgrad.quora.service.entity.AnswerEntity;
++import com.upgrad.quora.service.entity.QuestionEntity;
++import com.upgrad.quora.service.entity.UserAuthTokenEntity;
++import com.upgrad.quora.service.exception.AnswerNotFoundException;
++import com.upgrad.quora.service.exception.AuthorizationFailedException;
++import com.upgrad.quora.service.exception.InvalidQuestionException;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Propagation;
++import org.springframework.transaction.annotation.Transactional;
++
++import java.time.ZonedDateTime;
++import java.util.List;
++import java.util.UUID;
++
++@Service
++public class AnswerBusinessService {
++
++    @Autowired
++    UserDao userDao;
++
++    @Autowired
++    AnswerDao answerDao;
++
++    @Autowired
++    QuestionDAO questionDAO;
++
++    public List<AnswerEntity> getAllAnswersToQuestionById(String questionId, String authorizationToken) throws AuthorizationFailedException, InvalidQuestionException {
++        validateAuthorizationToken(authorizationToken);
++        List<AnswerEntity> answers = answerDao.getAllAnswersForQuestion(questionId);
++        if (null == answers || answers.size() == 0)
++            throw new InvalidQuestionException(GenericErrorCode.QUES_001.getCode(), GenericErrorCode.QUES_001.getDefaultMessage());
++        else return answers;
++    }
++
++
++    @Transactional(propagation = Propagation.REQUIRED)
++    public AnswerEntity createAnswerForQuestion(String questionId, String answer, String authorizationToken) throws AuthorizationFailedException, InvalidQuestionException {
++
++        UserAuthTokenEntity userAuthTokenEntity = validateAuthorizationToken(authorizationToken);
++
++        QuestionEntity questionEntity = questionDAO.getQuestionById(questionId);
++        if (questionEntity == null)
++            throw new InvalidQuestionException(GenericErrorCode.QUES_001.getCode(), GenericErrorCode.QUES_001.getDefaultMessage());
++
++        AnswerEntity answerEntity = new AnswerEntity();
++        answerEntity.setUuid(UUID.randomUUID().toString());
++        answerEntity.setDate(ZonedDateTime.now());
++        answerEntity.setAnswer(answer);
++        answerEntity.setQuestionEntity(questionEntity);
++        answerEntity.setUserEntity(userAuthTokenEntity.getUserEntity());
++        answerEntity = answerDao.createAnswer(answerEntity);
++        return answerEntity;
++
++    }
++
++    @Transactional(propagation = Propagation.REQUIRED)
++    public AnswerEntity updateAnswer(String answerId, String answer, String authorizationToken) throws AuthorizationFailedException, AnswerNotFoundException {
++        UserAuthTokenEntity userAuthTokenEntity = userDao.getUserAuthToken(authorizationToken);
++        if (userAuthTokenEntity == null)
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_001.getCode(), GenericErrorCode.ATHR_001.getDefaultMessage());
++        if (null != userAuthTokenEntity.getLogoutAt() && userAuthTokenEntity.getLogoutAt().compareTo(ZonedDateTime.now()) < 0)
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to edit an answer");
++
++        AnswerEntity answerEntity = answerDao.getAnswerByUUID(answerId);
++        if (answerEntity == null)
++            throw new AnswerNotFoundException(GenericErrorCode.ANS_001.getCode(), GenericErrorCode.ANS_001.getDefaultMessage());
++        if (!userAuthTokenEntity.getUser().getUuid().equals(answerEntity.getUserEntity().getUuid()))
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_003.getCode(), "Only the answer owner can edit the answer");
++        answerEntity.setAnswer(answer);
++        answerEntity = answerDao.saveOrUpdateAnswer(answerEntity);
++
++        return answerEntity;
++
++    }
++
++    @Transactional(propagation = Propagation.REQUIRED)
++    public AnswerEntity deleteAnswer(String answerId, String authorizationToken) throws AuthorizationFailedException, AnswerNotFoundException {
++
++        UserAuthTokenEntity userAuthTokenEntity = validateAuthorizationToken(authorizationToken);
++        AnswerEntity answerEntity = answerDao.getAnswerByUUID(answerId);
++
++        if (answerEntity == null)
++            throw new AnswerNotFoundException(GenericErrorCode.ANS_001.getCode(), GenericErrorCode.ANS_001.getDefaultMessage());
++        if (!userAuthTokenEntity.getUser().getRole().equals("admin") && !userAuthTokenEntity.getUser().getUuid().equals(answerEntity.getUserEntity().getUuid()))
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_003.getCode(), "Only the answer owner or admin can delete the answer");
++        answerDao.deleteAnswer(answerEntity);
++        return answerEntity;
++
++    }
++
++    private UserAuthTokenEntity validateAuthorizationToken(String authorizationToken) throws AuthorizationFailedException {
++        UserAuthTokenEntity userAuthTokenEntity = userDao.getUserAuthToken(authorizationToken);
++        if (userAuthTokenEntity == null)
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_001.getCode(), GenericErrorCode.ATHR_001.getDefaultMessage());
++        if (null != userAuthTokenEntity.getLogoutAt() && userAuthTokenEntity.getLogoutAt().compareTo(ZonedDateTime.now()) < 0)
++            throw new AuthorizationFailedException(GenericErrorCode.ATHR_002.getCode(), "User is signed out.Sign in first to delete an answer");
++        return userAuthTokenEntity;
++    }
++
++}
+Index: quora-api/src/main/java/com/upgrad/quora/api/controller/AnswerController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- quora-api/src/main/java/com/upgrad/quora/api/controller/AnswerController.java	(revision Shelved Version)
++++ quora-api/src/main/java/com/upgrad/quora/api/controller/AnswerController.java	(revision Shelved Version)
+@@ -0,0 +1,79 @@
++package com.upgrad.quora.api.controller;
++
++import com.upgrad.quora.api.model.AnswerRequest;
++import com.upgrad.quora.api.model.AnswerResponse;
++import com.upgrad.quora.api.model.AnswerDetailsResponse;
++
++import com.upgrad.quora.service.business.AnswerBusinessService;
++import com.upgrad.quora.service.entity.AnswerEntity;
++import com.upgrad.quora.service.exception.AnswerNotFoundException;
++import com.upgrad.quora.service.exception.AuthorizationFailedException;
++import com.upgrad.quora.service.exception.InvalidQuestionException;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.MediaType;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.*;
++
++import java.util.List;
++import java.util.stream.Collectors;
++
++
++@RestController
++public class AnswerController {
++    @Autowired
++    AnswerBusinessService answerBusinessService;
++
++    @GetMapping(path = "/answer/all/{questionId}")
++    public ResponseEntity<List<AnswerDetailsResponse>> getAllAnswersToQuestion(@PathVariable("questionId") String userId,
++                                                          @RequestHeader("authorization") final String authorization)
++            throws AuthorizationFailedException, InvalidQuestionException {
++
++        List<AnswerEntity> answersList = answerBusinessService.getAllAnswersToQuestionById(userId, authorization);
++
++        List<AnswerDetailsResponse> answersResponseList = answersList.parallelStream().map(ans ->{
++                AnswerDetailsResponse ansRes = new AnswerDetailsResponse();
++                ansRes.setId(ans.getUuid());
++                ansRes.setAnswerContent(ans.getAnswer());
++                ansRes.setQuestionContent(ans.getQuestionEntity().getContent());
++                return ansRes;
++        }).collect(Collectors.toList());
++
++        return new ResponseEntity<>(answersResponseList, HttpStatus.OK);
++    }
++
++    @RequestMapping(method = RequestMethod.POST, path = "/question/{questionId}/answer/create",
++            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
++    public ResponseEntity<AnswerResponse> createAnswerForQuestion(@PathVariable("questionId") String questionId,
++                                            AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
++                                                throws AuthorizationFailedException, InvalidQuestionException {
++
++        AnswerEntity answerEntity = answerBusinessService.createAnswerForQuestion(questionId, answerRequest.getAnswer(), authorization);
++
++        AnswerResponse answerResponse = new AnswerResponse().id(answerEntity.getUuid()).status("ANSWER CREATED");
++        return new ResponseEntity<>(answerResponse, HttpStatus.OK);
++    }
++
++    @RequestMapping(method = RequestMethod.PUT, path = "/answer/edit/{answerId}",
++            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
++    public ResponseEntity<AnswerResponse> updateAnswer(@PathVariable("answerId") String answerId,
++                                               AnswerRequest answerRequest, @RequestHeader("authorization") final String authorization)
++                                                    throws AuthorizationFailedException, AnswerNotFoundException {
++
++        AnswerEntity answerEntity = answerBusinessService.updateAnswer(answerId, answerRequest.getAnswer(), authorization);
++
++        AnswerResponse answerResponse = new AnswerResponse().id(answerEntity.getUuid()).status("ANSWER EDITED");
++        return new ResponseEntity<>(answerResponse, HttpStatus.OK);
++    }
++
++    @RequestMapping(method = RequestMethod.DELETE, path = "/answer/delete/{answerId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
++    public ResponseEntity<AnswerResponse> deleteAnswer(@PathVariable("answerId") String answerId,
++                                                        @RequestHeader("authorization") final String authorization)
++            throws AuthorizationFailedException, AnswerNotFoundException {
++
++        AnswerEntity answerEntity = answerBusinessService.deleteAnswer(answerId, authorization);
++
++        AnswerResponse answerResponse = new AnswerResponse().id(answerEntity.getUuid()).status("ANSWER DELETED");
++        return new ResponseEntity<>(answerResponse, HttpStatus.OK);
++    }
++}
+Index: quora-service/src/main/java/com/upgrad/quora/service/dao/AnswerDao.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- quora-service/src/main/java/com/upgrad/quora/service/dao/AnswerDao.java	(revision Shelved Version)
++++ quora-service/src/main/java/com/upgrad/quora/service/dao/AnswerDao.java	(revision Shelved Version)
+@@ -0,0 +1,69 @@
++package com.upgrad.quora.service.dao;
++
++import com.upgrad.quora.service.entity.AnswerEntity;
++import org.springframework.stereotype.Repository;
++
++import javax.persistence.EntityManager;
++import javax.persistence.NoResultException;
++import javax.persistence.PersistenceContext;
++import java.util.List;
++
++@Repository
++public class AnswerDao {
++    @PersistenceContext
++    private EntityManager entityManager;
++
++    public List<AnswerEntity> getAllAnswersForQuestion(final String questionId) {
++        try {
++            return entityManager
++                    .createNamedQuery("answersByQuestionUUID", AnswerEntity.class)
++                    .setParameter("questionId", questionId)
++                    .getResultList();
++        } catch (NoResultException nre) {
++            return null;
++        }
++    }
++
++    public AnswerEntity createAnswer(final AnswerEntity answerEntity) {
++        try {
++            entityManager.persist(answerEntity);
++            return answerEntity;
++        } catch (NoResultException nre) {
++            return null;
++        }
++
++
++    }
++
++    public AnswerEntity getAnswerByUUID(final String answerId) {
++        try {
++            return entityManager
++                    .createNamedQuery("getAnswerByUUID", AnswerEntity.class)
++                    .setParameter("answerId", answerId)
++                    .getSingleResult();
++
++        } catch (NoResultException nre) {
++            return null;
++        }
++    }
++
++    public AnswerEntity saveOrUpdateAnswer(final AnswerEntity answerEntity) {
++        try {
++            return entityManager.merge(answerEntity);
++
++        } catch (NoResultException nre) {
++            return null;
++        }
++    }
++
++    public AnswerEntity deleteAnswer(final AnswerEntity answerEntity) {
++        try {
++            entityManager.remove(answerEntity);
++
++            return answerEntity;
++
++        } catch (NoResultException nre) {
++            return null;
++        }
++    }
++}
+\ No newline at end of file
+Index: quora-service/src/main/java/com/upgrad/quora/service/entity/AnswerEntity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- quora-service/src/main/java/com/upgrad/quora/service/entity/AnswerEntity.java	(revision Shelved Version)
++++ quora-service/src/main/java/com/upgrad/quora/service/entity/AnswerEntity.java	(revision Shelved Version)
+@@ -0,0 +1,101 @@
++package com.upgrad.quora.service.entity;
++
++import org.hibernate.annotations.OnDelete;
++import org.hibernate.annotations.OnDeleteAction;
++
++import javax.persistence.*;
++import javax.validation.constraints.NotNull;
++import javax.validation.constraints.Size;
++import java.io.Serializable;
++import java.time.ZonedDateTime;
++
++@Entity
++@Table(name = "answer")
++@NamedQueries({
++        @NamedQuery(name = "answersByQuestionUUID", query = "select a from AnswerEntity a where a.questionEntity.uuid=:questionId"),
++        @NamedQuery(name = "getAnswerByUUID", query = "select a from AnswerEntity a where a.uuid=:answerId")
++
++
++})
++public class AnswerEntity implements Serializable {
++
++    @Id
++    @Column(name = "id")
++    @GeneratedValue(strategy = GenerationType.IDENTITY)
++    private Integer id;
++
++    @Column(name = "uuid")
++    @Size(max = 200)
++    @NotNull
++    private String uuid;
++
++    @Column(name = "ans")
++    @NotNull
++    @Size(max = 500)
++    private String answer;
++
++    @Column(name = "date")
++    private ZonedDateTime date;
++
++    @ManyToOne
++    @NotNull
++    @OnDelete(action = OnDeleteAction.CASCADE)
++    @JoinColumn(name = "user_id")
++    private UserEntity userEntity;
++
++    @ManyToOne
++    @NotNull
++    @OnDelete(action = OnDeleteAction.CASCADE)
++    @JoinColumn(name = "question_id")
++    private QuestionEntity questionEntity;
++
++    public Integer getId() {
++        return id;
++    }
++
++    public void setId(Integer id) {
++        this.id = id;
++    }
++
++    public String getUuid() {
++        return uuid;
++    }
++
++    public void setUuid(String uuid) {
++        this.uuid = uuid;
++    }
++
++    public String getAnswer() {
++        return answer;
++    }
++
++    public void setAnswer(String answer) {
++        this.answer = answer;
++    }
++
++    public ZonedDateTime getDate() {
++        return date;
++    }
++
++    public void setDate(ZonedDateTime date) {
++        this.date = date;
++    }
++
++    public UserEntity getUserEntity() {
++        return userEntity;
++    }
++
++    public void setUserEntity(UserEntity userEntity) {
++        this.userEntity = userEntity;
++    }
++
++    public QuestionEntity getQuestionEntity() {
++        return questionEntity;
++    }
++
++    public void setQuestionEntity(QuestionEntity questionEntity) {
++        this.questionEntity = questionEntity;
++    }
++
++
++}
+Index: quora-service/src/main/java/com/upgrad/quora/service/exception/AnswerNotFoundException.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- quora-service/src/main/java/com/upgrad/quora/service/exception/AnswerNotFoundException.java	(revision Shelved Version)
++++ quora-service/src/main/java/com/upgrad/quora/service/exception/AnswerNotFoundException.java	(revision Shelved Version)
+@@ -0,0 +1,42 @@
++package com.upgrad.quora.service.exception;
++
++import java.io.PrintStream;
++import java.io.PrintWriter;
++
++/**
++ * AnswerNotFoundException is thrown when answer is not found.
++ */
++public class AnswerNotFoundException extends Exception {
++    private final String code;
++    private final String errorMessage;
++
++    public AnswerNotFoundException(final String code, final String errorMessage) {
++        this.code = code;
++        this.errorMessage = errorMessage;
++    }
++
++    @Override
++    public void printStackTrace() {
++        super.printStackTrace();
++    }
++
++    @Override
++    public void printStackTrace(PrintStream s) {
++        super.printStackTrace(s);
++    }
++
++    @Override
++    public void printStackTrace(PrintWriter s) {
++        super.printStackTrace(s);
++    }
++
++    public String getCode() {
++        return code;
++    }
++
++    public String getErrorMessage() {
++        return errorMessage;
++    }
++
++}
++

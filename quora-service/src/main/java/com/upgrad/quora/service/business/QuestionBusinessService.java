@@ -24,10 +24,12 @@ public class QuestionBusinessService {
     @Autowired
     private QuestionDAO questionDAO;
 
-    @Autowired private UserDao userDao;
+    @Autowired
+    private UserDao userDao;
 
     @Autowired
     private UserAuthTokenDao userAuthTokenDao;
+
     @Transactional(propagation = Propagation.REQUIRED)
     public QuestionEntity create(QuestionEntity questionEntity, String authorizationToken) throws AuthorizationFailedException {
         UserAuthTokenEntity userAuthTokenEntity = userAuthTokenDao.getUserAuthByToken(authorizationToken);
@@ -103,13 +105,11 @@ public class QuestionBusinessService {
             throw new AuthorizationFailedException("ATHR-001", "User has not signed in");
         } else if (userAuthEntity.getLogoutAt() != null) {
             throw new AuthorizationFailedException(
-                    "ATHR-002",
-                    "User is signed out.Sign in first to get all questions posted by a specific user");
+                    "ATHR-002", "User is signed out.Sign in first to get all questions posted by a specific user");
         }
         UserEntity user = userDao.getUserById(userId);
         if (user == null) {
-            throw new UserNotFoundException(
-                    "USR-001", "User with entered uuid whose question details are to be seen does not exist");
+            throw new UserNotFoundException("USR-001", "User with entered uuid whose question details are to be seen does not exist");
         }
         return questionDAO.getAllQuestionsByUser(user);
     }

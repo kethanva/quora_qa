@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/question")
@@ -33,13 +34,13 @@ public class QuestionController {
     @GetMapping(path = "/all")
     public ResponseEntity<List<QuestionDetailsResponse>> getAllQuestions(@RequestHeader("authorization") final String authorization) throws AuthorizationFailedException {
         List<QuestionEntity> questionList = questionBusinessService.getAllQuestions(authorization);
-        List<QuestionDetailsResponse> questionResponseList = new ArrayList<>(questionList.size());
-        questionList.stream().parallel().forEach(question -> {
-            QuestionDetailsResponse questionDetailsResponse = new QuestionDetailsResponse();
-            questionDetailsResponse.setId(question.getUuid());
-            questionDetailsResponse.setContent(question.getContent());
-            questionResponseList.add(questionDetailsResponse);
-        });
+        List<QuestionDetailsResponse> questionResponseList = questionList.parallelStream().map(ques ->{
+            QuestionDetailsResponse quesRes = new QuestionDetailsResponse();
+            quesRes.setId(ques.getUuid());
+            quesRes.setContent(ques.getContent());
+            return quesRes;
+        }).collect(Collectors.toList());
+
         return new ResponseEntity<>(questionResponseList, HttpStatus.OK);
     }
 
