@@ -20,6 +20,8 @@ public class JwtTokenProvider {
 
     /**
      * A constructor for JwtTokenProvider class which receives user password as an argument to be used in the signature part of JWT access token.
+     *
+     * @param secret secret
      */
     public JwtTokenProvider(final String secret) {
         try {
@@ -35,6 +37,8 @@ public class JwtTokenProvider {
      * This information is stored in the payload of the JWT token and the JWT token is returned by this method.
      */
     /**
+     * Generate token string
+     *
      * @param userUuid        - uuid of the user
      * @param issuedDateTime  - current time
      * @param expiresDateTime - expiry time of the JWT token

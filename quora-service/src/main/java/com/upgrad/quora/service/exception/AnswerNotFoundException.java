@@ -10,6 +10,12 @@ public class AnswerNotFoundException extends Exception {
     private final String code;
     private final String errorMessage;
 
+    /**
+     * Answer not found exception
+     *
+     * @param code         code
+     * @param errorMessage error message
+     */
     public AnswerNotFoundException(final String code, final String errorMessage) {
         this.code = code;
         this.errorMessage = errorMessage;
@@ -30,10 +36,20 @@ public class AnswerNotFoundException extends Exception {
         super.printStackTrace(s);
     }
 
+    /**
+     * Gets code *
+     *
+     * @return the code
+     */
     public String getCode() {
         return code;
     }
 
+    /**
+     * Gets error message *
+     *
+     * @return the error message
+     */
     public String getErrorMessage() {
         return errorMessage;
     }

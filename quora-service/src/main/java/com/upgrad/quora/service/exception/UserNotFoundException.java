@@ -10,6 +10,12 @@ public class UserNotFoundException extends Exception {
     private final String code;
     private final String errorMessage;
 
+    /**
+     * User not found exception
+     *
+     * @param code         code
+     * @param errorMessage error message
+     */
     public UserNotFoundException(final String code, final String errorMessage) {
         this.code = code;
         this.errorMessage = errorMessage;
@@ -30,10 +36,20 @@ public class UserNotFoundException extends Exception {
         super.printStackTrace(s);
     }
 
+    /**
+     * Gets code *
+     *
+     * @return the code
+     */
     public String getCode() {
         return code;
     }
 
+    /**
+     * Gets error message *
+     *
+     * @return the error message
+     */
     public String getErrorMessage() {
         return errorMessage;
     }

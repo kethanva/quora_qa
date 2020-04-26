@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Base64;
 
+/**
+ * User controller
+ */
 @RestController
 @RequestMapping("/")
 public class UserController {
@@ -30,6 +33,13 @@ public class UserController {
     @Autowired
     private UserControllerBusinessService userControllerBusinessService;
 
+    /**
+     * User signup response entity
+     *
+     * @param signupUserRequest signup user request
+     * @return the response entity
+     * @throws SignUpRestrictedException sign up restricted exception
+     */
     @RequestMapping(
             method = RequestMethod.POST,
             path = "/user/signup",
@@ -55,9 +65,16 @@ public class UserController {
                 new SignupUserResponse()
                         .id(createdUserEntity.getUuid())
                         .status("USER SUCCESSFULLY REGISTERED");
-        return new ResponseEntity<SignupUserResponse>(userResponse, HttpStatus.CREATED);
+        return new ResponseEntity<>(userResponse, HttpStatus.CREATED);
     }
 
+    /**
+     * User sign in response entity
+     *
+     * @param authorization authorization
+     * @return the response entity
+     * @throws AuthenticationFailedException authentication failed exception
+     */
     @RequestMapping(
             method = RequestMethod.POST,
             path = "/user/signin",
@@ -78,9 +95,16 @@ public class UserController {
         signinResponse.setId(userAuthTokenEntity.getUserEntity().getUuid());
         signinResponse.setMessage("SIGNED IN SUCCESSFULLY");
 
-        return new ResponseEntity<SigninResponse>(signinResponse, headers, HttpStatus.OK);
+        return new ResponseEntity<>(signinResponse, headers, HttpStatus.OK);
     }
 
+    /**
+     * User signout response entity
+     *
+     * @param accessToken access token
+     * @return the response entity
+     * @throws SignOutRestrictedException sign out restricted exception
+     */
     @RequestMapping(
             method = RequestMethod.POST,
             path = "/user/signout",
@@ -90,7 +114,7 @@ public class UserController {
         UserEntity userEntity = userControllerBusinessService.signout(accessToken);
         SignoutResponse signoutResponse =
                 new SignoutResponse().id(userEntity.getUuid()).message("SIGNED OUT SUCCESSFULLY");
-        return new ResponseEntity<SignoutResponse>(signoutResponse, HttpStatus.OK);
+        return new ResponseEntity<>(signoutResponse, HttpStatus.OK);
     }
 
 }
